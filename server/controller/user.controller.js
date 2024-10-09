@@ -2,14 +2,14 @@ const connectDatabase = require('../config/database.config');
 
 // Add User
 exports.addUser = async (req, res) => {
-    const { email, profileImage, user_token } = req.body; // Ensure to include user_token
+    const { email, user_token } = req.body; // Ensure to include user_token
 
     try {
-        const db = await connectDatabase(); // Establish a connection
-        const sql = `INSERT INTO user (email, profileimage, user_token) 
-                     VALUES (?, ?, ?)`; // Include user_token in the insert statement
+        const db = await connectDatabase();
+        const sql = `INSERT INTO user (email, user_token) 
+                     VALUES (?, ?)`;
 
-        const [result] = await db.execute(sql, [email, profileImage, user_token]);
+        const [result] = await db.execute(sql, [email, user_token]);
 
         res.json({ userId: result.insertId, message: 'User added successfully' });
     } catch (err) {
@@ -18,22 +18,25 @@ exports.addUser = async (req, res) => {
     }
 };
 
-
-// Update User
-exports.updateUser = async (req, res) => {
-    const { userId, name, email, role, telephone, university, organization, profileImage } = req.body;
-
+// Select Users (only emails)
+exports.selectUserEmails = async (req, res) => {
     try {
-        const db = await connectDatabase(); // Establish a connection
-        const sql = `UPDATE user
-                     SET name = ?, email = ?,  profileimage = ? 
-                     WHERE user_id = ?`;
+        const db = await connectDatabase();
+        const sql = `SELECT email FROM user`;
 
-        const [result] = await db.execute(sql, [name, email, role, telephone, university, organization, profileImage, userId]);
+        const [results] = await db.execute(sql);
 
-        res.json({ message: 'User updated successfully' });
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'No users found' });
+        }
+
+        res.json({ emails: results.map(user => user.email) });
     } catch (err) {
-        console.error('Error updating user:', err);
-        return res.status(500).json({ error: 'Error updating user' });
+        console.error('Error fetching user emails:', err);
+        return res.status(500).json({ error: 'Error fetching user emails', details: err });
     }
 };
+
+
+
+

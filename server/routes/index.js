@@ -1,5 +1,7 @@
 const router = require('express').Router();
 const UserRoutes = require('./api/user.route');
+const SponsorRoutes = require('./api/sponsor.route');
+const InnovatorRoutes = require('./api/innovator.route')
 
 // Define the root route in your routes file
 router.get('/', (req, res) => {
@@ -9,8 +11,9 @@ router.get('/', (req, res) => {
     });
 });
 
-// Use user routes
 router.use('/api/user', UserRoutes);
+router.use('/api/sponsor', SponsorRoutes)
+router.use('/api/innovator', InnovatorRoutes)
 
 // Catch-all route for undefined routes
 router.use('*', (req, res) => {

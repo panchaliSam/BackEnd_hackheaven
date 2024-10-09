@@ -1,12 +1,12 @@
 // router/userRoutes.js
 const express = require('express');
 const router = express.Router();
-const userController = require('../../controller/user.controller');
+const userController = require('../../controller/');
 
 // Add User Route
 router.post('/add', userController.addUser);
 
-// Update User Route
-router.put('/update', userController.updateUser);
+// Route to get user emails
+router.get('/user-emails', userController.selectUserEmails);
 
 module.exports = router;

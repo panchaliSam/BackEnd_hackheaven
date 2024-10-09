@@ -1,5 +1,9 @@
-const userController = require("./user.controller")
+const userController = require("./user.controller");
+const sponsorshipController = require("./sponsor.controller");
+const innovatorController = require("./innovator.controller");
 
-modulel.exports = {
-    userController
+module.exports = {
+    userController,
+    sponsorshipController,
+    innovatorController
 }
