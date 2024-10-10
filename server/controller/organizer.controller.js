@@ -1,29 +1,39 @@
-const multer = require('multer');
 const path = require('path');
 
 const connectDatabase = require('../config/database.config');
 
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/'); // Folder to store the PDFs
-    },
-    filename: function (req, file, cb) {
-        cb(null, Date.now() + '-' + path.extname(file.originalname)); // Timestamp for unique filenames
+exports.addHackathonEvent = async (req, res) => {
+    
+    const {
+        organizer_id,  
+        organization_name,
+        hackathon_name,
+        hackathon_type,
+        final_date,
+        location,
+        country,
+        phone_no,
+        email,
+        proposal_pdf, 
+        flyer_image   
+    } = req.body;
+
+    // Basic validation
+    if (!organizer_id || !organization_name || !hackathon_name || !hackathon_type || !final_date || !location || !country || !phone_no || !email || !proposal_pdf || !flyer_image) {
+        return res.status(400).json({ error: 'All fields are required' });
     }
-});
 
-const upload = multer({ storage: storage }).single('proposal_pdf');
+    try {
+        const db = await connectDatabase();
 
-//Register organizer
-exports.registerOrganizer = async (req, res) => {
-    // Handle file upload
-    upload(req, res, async function (err) {
-        if (err) {
-            return res.status(400).json({ error: 'Error uploading file', details: err });
-        }
+        const sql = `
+            INSERT INTO hackathon
+            (organizer_id, organization_name, hackathon_name, hackathon_type, final_date, location, country, phone_no, email, proposal_pdf, flyer_image, created_at) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        `;
 
-        // Destructure the organizer details from the request body
-        const {
+        const [result] = await db.execute(sql, [
+            organizer_id,
             organization_name,
             hackathon_name,
             hackathon_type,
@@ -31,45 +41,130 @@ exports.registerOrganizer = async (req, res) => {
             location,
             country,
             phone_no,
-            email
-        } = req.body;
+            email,
+            proposal_pdf,  
+            flyer_image    
+        ]);
 
-        const proposal_pdf = req.file ? req.file.filename : null; // Check if the file was uploaded
-
-        // Basic validation
-        if (!organization_name || !hackathon_name || !hackathon_type || !final_date || !location || !country || !phone_no || !email || !proposal_pdf) {
-            return res.status(400).json({ error: 'All fields are required' });
-        }
-
-        try {
-            // Establish a connection to the database
-            const db = await connectDatabase();
-
-            // Insert organizer data into the database
-            const sql = `
-                INSERT INTO organizers 
-                (organization_name, hackathon_name, hackathon_type, final_date, location, country, phone_no, email, proposal_pdf) 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            `;
-
-            const [result] = await db.execute(sql, [
-                organization_name,
-                hackathon_name,
-                hackathon_type,
-                final_date,
-                location,
-                country,
-                phone_no,
-                email,
-                proposal_pdf
-            ]);
-
-            // Respond with success
-            res.json({ organizerId: result.insertId, message: 'Organizer added successfully' });
-        } catch (err) {
-            console.error('Error inserting organizer:', err);
-            return res.status(500).json({ error: 'Error inserting organizer', details: err });
-        }
-    });
+        res.json({ hackathonId: result.insertId, message: 'Hackathon event added successfully' });
+    } catch (err) {
+        console.error('Error inserting hackathon event:', err);
+        return res.status(500).json({ error: 'Error inserting hackathon event', details: err });
+    }
 };
+
+
+exports.updateHackathonEvent = async (req, res) => {
+    const {
+        hackathon_id,  
+        organizer_id,  
+        organization_name,
+        hackathon_name,
+        hackathon_type,
+        final_date,
+        location,
+        country,
+        phone_no,
+        email,
+        proposal_pdf, 
+        flyer_image   
+    } = req.body;
+
+    // Basic validation
+    if (!hackathon_id || !organizer_id || !organization_name || !hackathon_name || !hackathon_type || !final_date || !location || !country || !phone_no || !email || !proposal_pdf || !flyer_image) {
+        return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    try {
+        const db = await connectDatabase();
+
+        const sql = `
+            UPDATE hackathon 
+            SET organizer_id = ?, organization_name = ?, hackathon_name = ?, hackathon_type = ?, final_date = ?, location = ?, country = ?, phone_no = ?, email = ?, proposal_pdf = ?, flyer_image = ?
+            WHERE hackathon_id = ?
+        `;
+
+        await db.execute(sql, [
+            organizer_id,
+            organization_name,
+            hackathon_name,
+            hackathon_type,
+            final_date,
+            location,
+            country,
+            phone_no,
+            email,
+            proposal_pdf,  
+            flyer_image,   
+            hackathon_id   
+        ]);
+
+        res.json({ message: 'Hackathon event updated successfully' });
+    } catch (err) {
+        console.error('Error updating hackathon event:', err);
+        return res.status(500).json({ error: 'Error updating hackathon event', details: err });
+    }
+};
+
+
+exports.retrieveHackathonCardDetails = async (req, res) => {
+    const { hackathon_id } = req.params;
+
+    // Basic validation
+    if (!hackathon_id) {
+        return res.status(400).json({ error: 'Hackathon ID is required' });
+    }
+
+    try {
+        const db = await connectDatabase();
+
+        const sql = `
+            SELECT hackathon_name, hackathon_type, final_date, location
+            FROM hackathon
+            WHERE hackathon_id = ?
+        `;
+
+        const [rows] = await db.execute(sql, [hackathon_id]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Hackathon event not found' });
+        }
+
+        res.json(rows[0]);
+    } catch (err) {
+        console.error('Error retrieving hackathon card details:', err);
+        return res.status(500).json({ error: 'Error retrieving hackathon card details', details: err });
+    }
+};
+
+
+exports.deleteHackathonEvent = async (req, res) => {
+    const { hackathon_id } = req.params;
+
+    // Basic validation
+    if (!hackathon_id) {
+        return res.status(400).json({ error: 'Hackathon ID is required' });
+    }
+
+    try {
+        const db = await connectDatabase();
+
+        const sql = `
+            DELETE FROM hackathon
+            WHERE hackathon_id = ?
+        `;
+
+        const [result] = await db.execute(sql, [hackathon_id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Hackathon event not found' });
+        }
+
+        res.json({ message: 'Hackathon event deleted successfully' });
+    } catch (err) {
+        console.error('Error deleting hackathon event:', err);
+        return res.status(500).json({ error: 'Error deleting hackathon event', details: err });
+    }
+};
+
 
