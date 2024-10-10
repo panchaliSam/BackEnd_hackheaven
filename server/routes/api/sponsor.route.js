@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const sponsorshipController = require('../../controller/');
+const sponsorshipController = require('../../controller/sponsor.controller');
 
 // Create a new sponsor
 router.post('/add', sponsorshipController.addSponsor);

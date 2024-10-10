@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const innovatorController = require('../../controller/');
+const innovatorController = require('../../controller/innovator.controller');
 
 // Create a new innovator
 router.post('/add', innovatorController.addInnovator);
