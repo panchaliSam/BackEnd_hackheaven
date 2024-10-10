@@ -1,0 +1,6 @@
+# Ignore service account key
+/config/serviceAccountKey.json
+
+# Ignore database config
+/config/database.config.js
+
