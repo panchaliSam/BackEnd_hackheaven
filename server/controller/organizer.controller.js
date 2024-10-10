@@ -107,12 +107,12 @@ exports.updateHackathonEvent = async (req, res) => {
 };
 
 
-exports.retrieveHackathonCardDetails = async (req, res) => {
-    const { hackathon_id } = req.params;
+exports.retrieveHackathonEventsByOrganizer = async (req, res) => {
+    const { organizer_id } = req.params; 
 
     // Basic validation
-    if (!hackathon_id) {
-        return res.status(400).json({ error: 'Hackathon ID is required' });
+    if (!organizer_id) {
+        return res.status(400).json({ error: 'Organizer ID is required' });
     }
 
     try {
@@ -121,21 +121,22 @@ exports.retrieveHackathonCardDetails = async (req, res) => {
         const sql = `
             SELECT hackathon_name, hackathon_type, final_date, location
             FROM hackathon
-            WHERE hackathon_id = ?
+            WHERE organizer_id = ?
         `;
 
-        const [rows] = await db.execute(sql, [hackathon_id]);
+        const [rows] = await db.execute(sql, [organizer_id]);
 
         if (rows.length === 0) {
-            return res.status(404).json({ error: 'Hackathon event not found' });
+            return res.status(404).json({ error: 'No hackathon events found for this organizer' });
         }
 
-        res.json(rows[0]);
+        res.json(rows);
     } catch (err) {
-        console.error('Error retrieving hackathon card details:', err);
-        return res.status(500).json({ error: 'Error retrieving hackathon card details', details: err });
+        console.error('Error retrieving hackathon events:', err);
+        return res.status(500).json({ error: 'Error retrieving hackathon events', details: err });
     }
 };
+
 
 
 exports.deleteHackathonEvent = async (req, res) => {
