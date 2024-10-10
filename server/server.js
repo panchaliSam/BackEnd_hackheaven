@@ -1,14 +1,37 @@
-require('dotenv').config(); 
 const express = require('express');
-const db = require('./config');
+const dotenv = require('dotenv');
+const cors = require('cors');
+const connectDatabase = require("./config/database.config");
+const routes = require("./routes");
+
+dotenv.config();
+
+// Express app
 const app = express();
+const port = process.env.PORT || 4002;
 
-const port = process.env.PORT || 3000;
+// Middleware
+app.use(cors({
+    origin: [
+        `http://localhost:8081`, // Allow localhost for web
+        `exp://192.168.1.9:8081`
+    ], // Replace with your frontend URL
+    methods: 'GET,POST,PUT,DELETE', // Allowed methods
+    allowedHeaders: 'Content-Type,Authorization' // Allowed headers
+}));
+app.use(express.json()); // To parse JSON bodies
 
-app.get('/', (req, res) => {
-  res.send('MySQL Connection Test - Server is running');
-});
+// MySQL connection
+connectDatabase().then(() => {
+    console.log('Connected to the MySQL database successfully!');
 
-app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+    // Use routes after successful connection
+    app.use(routes);
+
+    // Start the server
+    app.listen(port, () => {
+        console.log(`Server running on port ${port}`);
+    });
+}).catch(err => {
+    console.error('Failed to connect to the database:', err);
 });
