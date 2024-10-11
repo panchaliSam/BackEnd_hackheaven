@@ -1,0 +1,8 @@
+# Ignore service account key
+/config/serviceAccountKey.json
+
+# Ignore database config
+/config/database.config.js
+
+# Ignore firebase config
+/config/firebase.js
