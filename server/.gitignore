@@ -4,3 +4,5 @@
 # Ignore database config
 /config/database.config.js
 
+# Ignore firebase config
+/config/firebase.js

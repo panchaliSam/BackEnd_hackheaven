@@ -3,7 +3,7 @@ const router = express.Router();
 const innovatorController = require('../../controller/innovator.controller');
 
 // Create a new innovator
-router.post('/add', innovatorController.addInnovator);
+router.post('/add', innovatorController.upload, innovatorController.addInnovator);
 
 // Read all innovators
 router.get('/select-innovators', innovatorController.getAllInnovators);
