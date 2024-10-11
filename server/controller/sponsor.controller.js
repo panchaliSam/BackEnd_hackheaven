@@ -1,16 +1,7 @@
 const multer = require('multer');
-const admin = require('firebase-admin');
-const connectDatabase = require('../config/database.config');
-const serviceAccount = require('../config/serviceAccountKey.json');
 const { v4: uuidv4 } = require('uuid'); // Import UUID generator
-
-// Initialize Firebase Admin SDK
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-    storageBucket: "hackheaven-1a9c2.appspot.com" // Replace with your Firebase Storage bucket name
-});
-
-const bucket = admin.storage().bucket();
+const { getBucket } = require('../config/firebase'); // Import your Firebase Singleton
+const connectDatabase = require('../config/database.config'); // Adjust the path to your database config
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage(); // Store files in memory
@@ -26,6 +17,8 @@ exports.addSponsor = async (req, res) => {
     }
 
     try {
+        const bucket = getBucket(); // Get the Firebase Storage bucket instance
+
         // Generate a unique download token (UUID)
         const downloadToken = uuidv4();
 
@@ -65,14 +58,13 @@ exports.addSponsor = async (req, res) => {
     }
 };
 
-// Select all companies
+// Select all sponsors
 exports.getAllSponsors = async (req, res) => {
     try {
         const db = await connectDatabase();
         const sql = `SELECT * FROM sponsorship`; // Fetch all sponsor details
         const [results] = await db.execute(sql);
 
-        // Assuming the 'logo' field contains the image URL, no extra processing is needed
         const sponsors = results.map(sponsor => ({
             sponsor_id: sponsor.sponsor_id,
             sponsor_name: sponsor.sponsor_name,
@@ -80,10 +72,9 @@ exports.getAllSponsors = async (req, res) => {
             contact_no: sponsor.contact_no,
             country: sponsor.country,
             category: sponsor.category,
-            logo: sponsor.logo // This contains the Firebase Storage URL with the download token
+            logo: sponsor.logo // Firebase Storage URL with download token
         }));
 
-        // Return the sponsor data with the logo URLs directly
         res.json({ sponsors });
     } catch (err) {
         console.error('Error fetching sponsors:', err);
@@ -178,4 +169,4 @@ exports.searchSponsorsByCategory = async (req, res) => {
 };
 
 // Export the upload middleware for use in routes
-exports.upload = upload.single('logo'); // Adjust the field name as necessary
+exports.uploadSponsors = upload.single('logo'); // Adjust the field name as necessary
