@@ -1,7 +1,7 @@
 const multer = require('multer');
 const connectDatabase = require('../config/database.config');
 const { v4: uuidv4 } = require('uuid');
-const { getBucket } = require('../config/firebase'); // Import the getBucket function
+const { getBucket, deleteFileFromBucket } = require('../config/firebase'); // Import getBucket and deleteFileFromBucket
 
 // Configure multer for file uploads
 const storage = multer.memoryStorage(); // Store files in memory
@@ -23,7 +23,7 @@ exports.addInnovator = async (req, res) => {
             const bucket = getBucket();
 
             // Create a reference for the image file in Firebase Storage
-            const blob = bucket.file(`innovator-images/${Date.now()}_${file.originalname}`);
+            const blob = bucket.file(`innovators/${Date.now()}_${file.originalname}`);
             const blobStream = blob.createWriteStream({
                 metadata: {
                     contentType: file.mimetype,
@@ -112,7 +112,7 @@ exports.updateInnovator = async (req, res) => {
             const bucket = getBucket();
 
             // Create a reference for the image file in Firebase Storage
-            const blob = bucket.file(`innovator-images/${Date.now()}_${file.originalname}`);
+            const blob = bucket.file(`innovators/${Date.now()}_${file.originalname}`);
             const blobStream = blob.createWriteStream({
                 metadata: {
                     contentType: file.mimetype,
@@ -161,10 +161,24 @@ exports.deleteInnovator = async (req, res) => {
 
     try {
         const db = await connectDatabase();
-        const sql = `DELETE FROM innovator WHERE innovator_id = ?`;
-        const [result] = await db.execute(sql, [id]);
+        const sql = `SELECT image FROM innovator WHERE innovator_id = ?`;
+        const [results] = await db.execute(sql, [id]);
 
-        if (result.affectedRows === 0) {
+        if (results.length === 0) {
+            return res.status(404).json({ message: 'Innovator not found' });
+        }
+
+        // Delete the image from Firebase storage if it exists
+        const imageUrl = results[0].image;
+        if (imageUrl) {
+            const fileName = imageUrl.split('/o/')[1].split('?')[0];
+            await deleteFileFromBucket(fileName);
+        }
+
+        const deleteSql = `DELETE FROM innovator WHERE innovator_id = ?`;
+        const [deleteResult] = await db.execute(deleteSql, [id]);
+
+        if (deleteResult.affectedRows === 0) {
             return res.status(404).json({ message: 'Innovator not found' });
         }
 
@@ -176,4 +190,4 @@ exports.deleteInnovator = async (req, res) => {
 };
 
 // Export the upload middleware for use in routes
-exports.upload = upload.single('image'); // Adjust the field name for the uploaded image
+exports.uploadInnovator = upload.single('image'); // Adjust the field name for the uploaded image
