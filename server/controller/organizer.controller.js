@@ -59,27 +59,23 @@ exports.addHackathonEvent = async (req, res) => {
 };
 
 exports.updateHackathonEvent = async (req, res) => {
+  const { hackathon_id } = req.query;
+
+
   const {
-    hackathon_id,
     hackathon_name,
-    hackathon_type,
     final_date,
     location,
-    country,
-    phone_no,
-    email
+    phone_no
   } = req.body;
 
   // Basic validation
   if (
     !hackathon_id ||
     !hackathon_name ||
-    !hackathon_type ||
     !final_date ||
     !location ||
-    !country ||
-    !phone_no ||
-    !email
+    !phone_no
   ) {
     return res.status(400).json({ error: "All fields are required" });
   }
@@ -89,18 +85,15 @@ exports.updateHackathonEvent = async (req, res) => {
 
     const sql = `
             UPDATE hackathon 
-            SET hackathon_name = ?, hackathon_type = ?, final_date = ?, location = ?, country = ?, phone_no = ?, email = ?
+            SET hackathon_name = ?,  final_date = ?, location = ?,  phone_no = ?
             WHERE hackathon_id = ?
         `;
 
     await db.execute(sql, [
       hackathon_name,
-      hackathon_type,
       final_date,
       location,
-      country,
       phone_no,
-      email,
       hackathon_id
     ]);
 
@@ -114,41 +107,31 @@ exports.updateHackathonEvent = async (req, res) => {
 };
 
 exports.retrieveHackathonEventsByEmail = async (req, res) => {
-  const { hackathon_id } = req.params;
-
-  // Basic validation
-  if (!hackathon_id) {
-    return res.status(400).json({ error: "Hackathon ID is required" });
-  }
+  const { email } = req.query; // Get email from request parameters
 
   try {
     const db = await connectDatabase();
 
     const sql = `
-            SELECT hackathon_name, hackathon_type, final_date, location
-            FROM hackathon
-            WHERE hackathon_id = ?
-        `;
+      SELECT hackathon_id, hackathon_name, hackathon_type, final_date, location, phone_no
+      FROM hackathon
+      WHERE email = ?`; // Use email as the filter
 
-    const [rows] = await db.execute(sql, [hackathon_id]);
+    const [rows] = await db.execute(sql, [email]);
 
     if (rows.length === 0) {
-      return res
-        .status(404)
-        .json({ error: "No hackathon events found for this id" });
+      return res.status(404).json({ error: "No hackathon events found for this email" });
     }
 
     res.json(rows);
   } catch (err) {
     console.error("Error retrieving hackathon events:", err);
-    return res
-      .status(500)
-      .json({ error: "Error retrieving hackathon events", details: err });
+    return res.status(500).json({ error: "Error retrieving hackathon events", details: err });
   }
 };
 
 exports.deleteHackathonEvent = async (req, res) => {
-  const { hackathon_id } = req.params;
+  const { hackathon_id } = req.query;
 
   // Basic validation
   if (!hackathon_id) {
@@ -175,5 +158,35 @@ exports.deleteHackathonEvent = async (req, res) => {
     return res
       .status(500)
       .json({ error: "Error deleting hackathon event", details: err });
+  }
+};
+
+exports.getEventDetails = async (req, res) => {
+  const { hackathon_id } = req.query;
+
+  // Basic validation
+  if (!hackathon_id) {
+    return res.status(400).json({ error: "hackathon_id is required" });
+  }
+
+  try {
+    const db = await connectDatabase();
+
+    const sql = `
+      SELECT organization_name, hackathon_name, hackathon_type, final_date, 
+             location, country, phone_no, email, proposal_pdf
+      FROM hackathon
+      WHERE hackathon_id = ?`;
+
+    const [rows] = await db.execute(sql, [hackathon_id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Hackathon not found" });
+    }
+
+    res.json(rows[0]); // Return the first result
+  } catch (err) {
+    console.error("Error fetching hackathon details:", err);
+    return res.status(500).json({ error: "Error fetching hackathon details", details: err });
   }
 };
