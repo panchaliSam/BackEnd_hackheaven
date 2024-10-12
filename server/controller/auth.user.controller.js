@@ -1,4 +1,7 @@
-const { admin } = require('../config/firebase'); // Ensure you import the admin instance
+const { admin, initializeFirebase } = require('../config/firebase'); // Ensure you import the admin instance and the initialize function
+
+// Ensure Firebase is initialized before using it
+initializeFirebase();
 
 // Function to fetch all users
 exports.fetchAllUsers = async (req, res) => {
